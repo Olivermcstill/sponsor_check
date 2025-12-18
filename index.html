@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Check UK Skilled Worker Sponsor Licence</title>
+
+  <meta name="description"
+    content="Instantly check whether an employer is licensed to sponsor Skilled Worker visas in the UK using the official Home Office register." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f7f7f7;
+      margin: 0;
+      padding: 40px;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .yes { color: green; }
+    .no { color: red; }
+    .meta {
+      margin-top: 30px;
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Check UK Skilled Worker Sponsor Licence</h1>
+
+    <p>Enter an employer name to see if they are licensed to sponsor Skilled Worker visas.</p>
+
+    <input id="search" placeholder="e.g. Deloitte, NHS Trust, Amazon UK" />
+
+    <div id="result" class="result"></div>
+
+    <div class="meta">
+      Data source: UK Home Office register of licensed sponsors<br>
+      Last updated: 18 December 2025
+    </div>
+  </div>
+
+  <script>
+    let companies = [];
+
+    function normalise(text) {
+      return text
+        .toLowerCase()
+        .replace(/\b(ltd|limited|plc|llp)\b/g, "")
+        .replace(/[^a-z0-9 ]/g, "")
+        .trim();
+    }
+
+    fetch("ukvi_workers_employers.json")
+      .then(res => res.json())
+      .then(data => {
+        companies = data.map(c => normalise(c.name || c.organisation || ""));
+      });
+
+    document.getElementById("search").addEventListener("input", e => {
+      const query = normalise(e.target.value);
+      const found = companies.includes(query);
+
+      document.getElementById("result").innerHTML = found
+        ? "<span class='yes'>✅ Licensed sponsor</span>"
+        : "<span class='no'>❌ Not found on the official register</span>";
+    });
+  </script>
+</body>
+</html>
