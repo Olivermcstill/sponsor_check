@@ -41,6 +41,11 @@
       font-size: 13px;
       color: #666;
     }
+    .loading {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #888;
+    }
   </style>
 </head>
 
@@ -52,6 +57,7 @@
 
     <input id="search" placeholder="e.g. Deloitte, NHS Trust, Amazon UK" />
 
+    <div id="loading" class="loading">Loading employer data...</div>
     <div id="result" class="result"></div>
 
     <div class="meta">
@@ -60,37 +66,64 @@
     </div>
   </div>
 
+  <!-- Load Fuse.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
+
   <script>
-  let companies = [];
+    let fuse;
 
-  function normalise(text) {
-    return text
-      .toLowerCase()
-      .replace(/\b(ltd|limited|plc|llp)\b/g, "")
-      .replace(/[^a-z0-9 ]/g, "")
-      .trim();
-  }
+    // Debounce helper to limit search frequency
+    function debounce(fn, delay) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn.apply(this, args), delay);
+      }
+    }
 
-  fetch("ukvi_workers_employers.json")
-    .then(res => res.json())
-    .then(data => {
-      companies = data.flatMap(c => [
-  c.normalized_name,
-  ...(c.aliases || []).map(a => a.toLowerCase()),
-  c.acronym?.toLowerCase()
-]).filter(Boolean);
-    });
+    // Load JSON
+    fetch("ukvi_workers_employers.json")
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("loading").style.display = "none";
 
-  document.getElementById("search").addEventListener("input", e => {
-    const query = normalise(e.target.value);
+        // Prepare Fuse.js options
+        const options = {
+          keys: ["normalized_name", "aliases", "acronym"],
+          includeScore: true,
+          threshold: 0.4, // Adjust sensitivity: lower = stricter
+          ignoreLocation: true,
+          minMatchCharLength: 2
+        };
 
-    const found = companies.includes(query);
+        fuse = new Fuse(data, options);
+      })
+      .catch(err => {
+        document.getElementById("loading").textContent = "Failed to load employer data.";
+        console.error(err);
+      });
 
-    document.getElementById("result").innerHTML = found
-      ? "<span class='yes'>✅ Licensed sponsor</span>"
-      : "<span class='no'>❌ Not found on the official register</span>";
+    const input = document.getElementById("search");
+    const resultDiv = document.getElementById("result");
 
-    });
+    input.addEventListener("input", debounce(() => {
+      const query = input.value.trim();
+      if (!query || !fuse) {
+        resultDiv.innerHTML = "";
+        return;
+      }
+
+      const matches = fuse.search(query);
+
+      if (matches.length === 0) {
+        resultDiv.innerHTML = "<span class='no'>❌ Not found on the official register</span>";
+      } else {
+        // Show top match
+        const top = matches[0].item;
+        resultDiv.innerHTML = `✅ Licensed sponsor: <strong>${top.canonical_name}</strong>`;
+      }
+
+    }, 200));
   </script>
 </body>
 </html>
