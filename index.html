@@ -61,29 +61,33 @@
   </div>
 
   <script>
-    let companies = [];
+  let companies = [];
 
-    function normalise(text) {
-      return text
-        .toLowerCase()
-        .replace(/\b(ltd|limited|plc|llp)\b/g, "")
-        .replace(/[^a-z0-9 ]/g, "")
-        .trim();
-    }
+  function normalise(text) {
+    return text
+      .toLowerCase()
+      .replace(/\b(ltd|limited|plc|llp)\b/g, "")
+      .replace(/[^a-z0-9 ]/g, "")
+      .trim();
+  }
 
-    fetch("ukvi_workers_employers.json")
-      .then(res => res.json())
-      .then(data => {
-        companies = data.map(c => normalise(c.name || c.organisation || ""));
-      });
+  fetch("ukvi_workers_employers.json")
+    .then(res => res.json())
+    .then(data => {
+      companies = data.map(c => c.normalized_name);
+    });
 
-    document.getElementById("search").addEventListener("input", e => {
-      const query = normalise(e.target.value);
-      const found = companies.includes(query);
+  document.getElementById("search").addEventListener("input", e => {
+    const query = normalise(e.target.value);
 
-      document.getElementById("result").innerHTML = found
-        ? "<span class='yes'>✅ Licensed sponsor</span>"
-        : "<span class='no'>❌ Not found on the official register</span>";
+    const found = companies.includes(query);
+
+    document.getElementById("result").innerHTML = found
+      ? "<span class='yes'>✅ Licensed sponsor</span>"
+      : "<span class='no'>❌ Not found on the official register</span>";
+  });
+</script>
+
     });
   </script>
 </body>
