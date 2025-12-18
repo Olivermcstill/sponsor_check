@@ -74,7 +74,11 @@
   fetch("ukvi_workers_employers.json")
     .then(res => res.json())
     .then(data => {
-      companies = data.map(c => c.normalized_name);
+      companies = data.flatMap(c => [
+  c.normalized_name,
+  ...(c.aliases || []).map(a => a.toLowerCase()),
+  c.acronym?.toLowerCase()
+]).filter(Boolean);
     });
 
   document.getElementById("search").addEventListener("input", e => {
